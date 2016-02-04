@@ -8,6 +8,30 @@ import warning from './warning'
 
 const { array, func, object } = React.PropTypes
 
+const RouteContext = React.createClass({
+  contextTypes: {
+    router: object.isRequired
+  },
+
+  childContextTypes: {
+    router: object
+  },
+
+  getChildContext() {
+    this._childContext = this._childContext || {
+      ...this.context.router,
+      route: this.props.route
+    }
+    return {
+      router: this._childContext
+    }
+  },
+
+  render() {
+    return React.Children.only(this.props.children)
+  }
+})
+
 /**
  * A <RouterContext> renders the component tree for a given router state
  * and sets the history object and the current location in context.
@@ -56,7 +80,15 @@ const RouterContext = React.createClass({
   },
 
   createElement(component, props) {
-    return component == null ? null : this.props.createElement(component, props)
+    if (component == null)
+      return null
+    else
+      return (
+        <RouteContext
+          route={props.route}
+          children={this.props.createElement(component, props)}
+        />
+      )
   },
 
   render() {

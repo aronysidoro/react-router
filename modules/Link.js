@@ -3,6 +3,15 @@ import warning from './warning'
 
 const { bool, object, string, func, oneOfType } = React.PropTypes
 
+function isAbsolute(loc) {
+  return !loc.pathname.match(/^\//)
+}
+
+function resolvePathname(pathname, route, routes) {
+  // [insert magic path.resolve logic here]
+  return pathname
+}
+
 function isLeftClickEvent(event) {
   return event.button === 0
 }
@@ -22,9 +31,11 @@ function isEmptyObject(object) {
 function createLocationDescriptor(to, { query, hash, state }) {
   if (query || hash || state) {
     return { pathname: to, query, hash, state }
+  } else if (typeof to === 'string') {
+    return { pathname: to }
+  } else {
+    return to
   }
-
-  return to
 }
 
 /**
@@ -101,6 +112,14 @@ const Link = React.createClass({
     }
   },
 
+  resolveLocation(loc) {
+    if (!isAbsolute(loc)) {
+      const { routes, route } = this.context.router
+      loc.pathname = resolvePathname(loc.pathname, route, routes)
+    }
+    return loc
+  },
+
   render() {
     const { to, query, hash, state, activeClassName, activeStyle, onlyActiveOnIndex, ...props } = this.props
     warning(
@@ -112,7 +131,9 @@ const Link = React.createClass({
     const { router } = this.context
 
     if (router) {
-      const location = createLocationDescriptor(to, { query, hash, state })
+      const location = this.resolveLocation(
+        createLocationDescriptor(to, { query, hash, state })
+      )
       props.href = router.createHref(location)
 
       if (activeClassName || (activeStyle != null && !isEmptyObject(activeStyle))) {
